@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Albert — Image Recognition</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --black:      #0a0a0a;
+    --black-2:    #111111;
+    --black-3:    #1a1a1a;
+    --black-4:    #222222;
+    --red-dark:   #3d0000;
+    --red-mid:    #7a0000;
+    --red-vivid:  #cc1c1c;
+    --red-accent: #e83030;
+    --white:      #f5f5f5;
+    --muted:      rgba(245,245,245,0.45);
+    --glass:      rgba(20,5,5,0.55);
+    --glass-b:    rgba(200,50,50,0.18);
+    --radius:     16px;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background-color: var(--black);
+    background-image:
+      radial-gradient(ellipse 70% 50% at 80% 10%, rgba(90,0,0,0.55) 0%, transparent 60%),
+      radial-gradient(ellipse 50% 60% at 10% 90%, rgba(60,0,0,0.45) 0%, transparent 60%);
+    min-height: 100vh;
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+  }
+  .wrapper {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem 1rem 3rem;
+    gap: 2rem;
+  }
+  .header { text-align: center; }
+  .header h1 {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(4rem, 14vw, 7rem);
+    letter-spacing: 0.08em;
+    line-height: 0.9;
+    color: var(--white);
+  }
+  .header h1 span { color: var(--red-accent); }
+  .header p {
+    font-size: 0.72rem;
+    font-weight: 400;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.5rem;
+  }
+  .card-main {
+    width: 100%;
+    max-width: 460px;
+    background: var(--glass);
+    border: 1px solid var(--glass-b);
+    border-radius: var(--radius);
+    backdrop-filter: blur(24px) saturate(1.2);
+    -webkit-backdrop-filter: blur(24px) saturate(1.2);
+    overflow: hidden;
+  }
+  .cam-zone {
+    position: relative;
+    width: 100%;
+    background: var(--black-3);
+    border-bottom: 1px solid var(--glass-b);
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  .cam-zone::before, .cam-zone::after {
+    content: '';
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-color: var(--red-accent);
+    border-style: solid;
+    opacity: 0.7;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .cam-zone::before {
+    top: 14px; left: 14px;
+    border-width: 2px 0 0 2px;
+    border-radius: 3px 0 0 0;
+  }
+  .cam-zone::after {
+    bottom: 14px; right: 14px;
+    border-width: 0 2px 2px 0;
+    border-radius: 0 0 3px 0;
+  }
+  .cam-corner-tr, .cam-corner-bl {
+    position: absolute;
+    width: 32px;
+    height: 32px;
+    border-color: var(--red-accent);
+    border-style: solid;
+    opacity: 0.7;
+    z-index: 2;
+    pointer-events: none;
+  }
+  .cam-corner-tr { top: 14px; right: 14px; border-width: 2px 2px 0 0; border-radius: 0 3px 0 0; }
+  .cam-corner-bl { bottom: 14px; left: 14px; border-width: 0 0 2px 2px; border-radius: 0 0 0 3px; }
+  .scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--red-accent) 40%, var(--red-accent) 60%, transparent);
+    opacity: 0;
+    z-index: 3;
+    pointer-events: none;
+    animation: scan 3.5s ease-in-out infinite;
+  }
+  @keyframes scan {
+    0%   { top: 10%; opacity: 0; }
+    5%   { opacity: 0.6; }
+    50%  { top: 90%; opacity: 0.6; }
+    95%  { opacity: 0; }
+    100% { top: 10%; opacity: 0; }
+  }
+  .cam-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    z-index: 1;
+  }
+  .cam-placeholder svg {
+    width: 56px; height: 56px;
+    stroke: var(--red-accent);
+    fill: none;
+    stroke-width: 1.5;
+    opacity: 0.5;
+  }
+  .cam-placeholder p {
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  #webcam-container canvas {
+    position: absolute;
+    inset: 0;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover;
+    display: block;
+    z-index: 1;
+  }
+  .bottom-section { padding: 1.5rem; }
+  .btn-start {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 0.8rem 1.5rem;
+    background: var(--red-vivid);
+    color: var(--white);
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+    margin-bottom: 1.5rem;
+  }
+  .btn-start svg {
+    width: 16px; height: 16px;
+    stroke: currentColor; fill: none;
+    stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+    flex-shrink: 0;
+  }
+  .btn-start:hover {
+    background: var(--red-accent);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(232,48,48,0.4);
+  }
+  .btn-start:active { transform: translateY(0); }
+  .btn-start:disabled {
+    background: var(--red-dark);
+    color: rgba(255,255,255,0.4);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  .divider {
+    height: 1px;
+    background: var(--glass-b);
+    margin-bottom: 1.25rem;
+  }
+  .predictions-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+  }
+  .pred-item { margin-bottom: 1rem; }
+  .pred-item:last-child { margin-bottom: 0; }
+  .pred-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 5px;
+  }
+  .pred-name {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--white);
+    letter-spacing: 0.02em;
+  }
+  .pred-pct {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.05em;
+    color: var(--red-accent);
+    min-width: 3ch;
+    text-align: right;
+  }
+  .track {
+    height: 6px;
+    background: rgba(255,255,255,0.07);
+    border-radius: 50px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .fill {
+    height: 100%;
+    width: 0%;
+    border-radius: 50px;
+    background: linear-gradient(90deg, var(--red-mid) 0%, var(--red-accent) 100%);
+    transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .fill.dominant {
+    background: linear-gradient(90deg, var(--red-vivid) 0%, #ff5252 100%);
+    box-shadow: 0 0 10px rgba(232,48,48,0.55);
+  }
+  .placeholder-bars .pred-name { color: var(--muted); }
+  .placeholder-bars .pred-pct  { color: rgba(232,48,48,0.3); }
+  footer {
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(245,245,245,0.2);
+  }
+  @media (max-width: 480px) {
+    .bottom-section { padding: 1.2rem; }
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <header class="header">
+    <h1>AL<span>B</span>ERT</h1>
+    <p>Image Recognition &nbsp;·&nbsp; Teachable Machine</p>
+  </header>
+
+  <div class="card-main">
+    <div class="cam-zone" id="cam-zone">
+      <div class="cam-corner-tr"></div>
+      <div class="cam-corner-bl"></div>
+      <div class="scan-line"></div>
+      <div class="cam-placeholder" id="cam-placeholder">
+        <svg viewBox="0 0 24 24">
+          <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+          <circle cx="12" cy="13" r="4"/>
+        </svg>
+        <p>Câmera inativa</p>
+      </div>
+      <div id="webcam-container"></div>
+    </div>
+
+    <div class="bottom-section">
+      <button class="btn-start" id="btn-start" onclick="init()">
+        <svg viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        Ativar câmera
+      </button>
+
+      <div class="divider"></div>
+      <p class="predictions-label">Correspondência por classe</p>
+
+      <div id="label-container" class="placeholder-bars">
+        <div class="pred-item">
+          <div class="pred-row">
+            <span class="pred-name">—</span>
+            <span class="pred-pct">0%</span>
+          </div>
+          <div class="track"><div class="fill"></div></div>
+        </div>
+        <div class="pred-item">
+          <div class="pred-row">
+            <span class="pred-name">—</span>
+            <span class="pred-pct">0%</span>
+          </div>
+          <div class="track"><div class="fill"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>© 2025 Albert &nbsp;·&nbsp; Powered by Teachable Machine</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+<script>
+  const MODEL_URL = "https://teachablemachine.withgoogle.com/models/fRGCKIn3q/";
+  let model, webcam, maxPredictions;
+  let smoothed = [];
+
+  async function init() {
+    const btn = document.getElementById('btn-start');
+    btn.disabled = true;
+    btn.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" style="animation:spin 1s linear infinite;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;"><circle cx="12" cy="12" r="10" stroke-dasharray="28 72"/></svg> Carregando…';
+
+    model = await tmImage.load(MODEL_URL + "model.json", MODEL_URL + "metadata.json");
+    maxPredictions = model.getTotalClasses();
+    smoothed = new Array(maxPredictions).fill(0);
+
+    webcam = new tmImage.Webcam(400, 400, true);
+    await webcam.setup();
+    await webcam.play();
+
+    document.getElementById('cam-placeholder').style.display = 'none';
+    document.getElementById('webcam-container').appendChild(webcam.canvas);
+
+    const lc = document.getElementById('label-container');
+    lc.classList.remove('placeholder-bars');
+    lc.innerHTML = '';
+    for (let i = 0; i < maxPredictions; i++) {
+      lc.innerHTML += '<div class="pred-item"><div class="pred-row"><span class="pred-name" id="name-' + i + '">—</span><span class="pred-pct" id="pct-' + i + '">0%</span></div><div class="track"><div class="fill" id="bar-' + i + '"></div></div></div>';
+    }
+
+    btn.style.display = 'none';
+    window.requestAnimationFrame(loop);
+  }
+
+  async function loop() {
+    webcam.update();
+    await predict();
+    window.requestAnimationFrame(loop);
+  }
+
+  async function predict() {
+    const preds = await model.predict(webcam.canvas);
+    let maxIdx = 0;
+    preds.forEach((p, i) => { if (p.probability > preds[maxIdx].probability) maxIdx = i; });
+    preds.forEach((p, i) => {
+      smoothed[i] += (p.probability - smoothed[i]) * 0.14;
+      const pct = Math.round(smoothed[i] * 100);
+      document.getElementById('name-' + i).textContent = p.className;
+      document.getElementById('pct-' + i).textContent  = pct + '%';
+      const bar = document.getElementById('bar-' + i);
+      bar.style.width = pct + '%';
+      bar.classList.toggle('dominant', i === maxIdx && pct > 50);
+    });
+  }
+</script>
+</body>
+</html>
