@@ -45,20 +45,28 @@ O conceito de **Early Return** (Retorno Antecipado) ou *Guard Clauses* ajuda a e
 * **Linha 28 (`divisor += 2`):** Pulamos os pares (testando 3, 5, 7, 9...).
 * **Linha 30 (`return True`):** Passando ileso por todo o funil, confirma-se matematicamente que o número é primo.
 
-## 4. Separação de Responsabilidades (Testes)
+## 4. Interação com o Usuário via Terminal
 ```python
-def executar_testes() -> None:
-    """Executa casos de teste predefinidos para validar a função eh_primo."""
-    casos_de_teste = [0, 1, 2, 3, 4, 17, 18, 97, 100, 101]
-
-    for numero in casos_de_teste:
-        status = "primo" if eh_primo(numero) else "não primo"
-        print(f"{numero:>4} -> {status}")
+def interagir_com_usuario() -> None:
+    """Solicita um número ao usuário via terminal e verifica se é primo."""
+    print("=== Verificador de Números Primos ===")
+    while True:
+        entrada = input("Digite um número inteiro (ou 'q' para sair): ")
+        
+        if entrada.lower() == 'q':
+            print("Encerrando o programa...")
+            break
+            
+        try:
+            numero = int(entrada)
+            status = "É PRIMO" if eh_primo(numero) else "NÃO É PRIMO"
+            print(f"Resultado: O número {numero} {status}!\n")
+        except ValueError:
+            print("Erro: Entrada inválida. Por favor, digite apenas números inteiros.\n")
 
 if __name__ == "__main__":
-    executar_testes()
+    interagir_com_usuario()
 ```
-Em Clean Code, uma função deve fazer apenas uma coisa (*Single Responsibility Principle*).
-* A antiga rotina solta de testes agora é encapsulada na função `executar_testes()`. Isso isola o escopo e previne vazamento de variáveis globais.
-* **Linha 38:** A variável antes chamada de `resultado` passou a ser `status`, deixando mais claro que ela guarda uma etiqueta descritiva.
-* **Linhas 40-41:** O famoso `if __name__ == "__main__":` garante que `executar_testes()` só rode se executarmos este arquivo diretamente no terminal, permitindo que a função `eh_primo` seja importada de forma segura por outros arquivos do seu projeto.
+* **Linhas 35-40 (Loop Interativo e Condição de Parada):** O `while True:` (linha 35) mantém o programa rodando para que o usuário possa testar vários números. A função nativa `input()` (linha 36) paralisa a execução esperando a digitação. Se a pessoa digitar `'q'` (ou `'Q'`, graças ao `.lower()` na linha 38), o comando `break` (linha 40) é acionado, encerrando o programa.
+* **Linhas 42-47 (Tratamento de Exceções `try/except`):** Todo retorno do `input` é texto. Ao tentar converter esse texto para número na linha 43 (`int(entrada)`), o programa poderia "quebrar" caso o usuário digitasse uma letra (ex: "casa"). O bloco `try` tenta executar o código; se falhar (não for número), o erro `ValueError` é capturado pelo `except` na linha 46, exibindo um aviso amigável na linha 47 sem fechar o programa.
+* **Linhas 49-50 (Ponto de Entrada Seguro):** `if __name__ == "__main__":` garante que o loop interativo só iniciará se o script for rodado diretamente pelo console, impedindo que o script trave se ele for importado por outro módulo do seu sistema.

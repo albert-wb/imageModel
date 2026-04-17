@@ -29,13 +29,22 @@ def eh_primo(numero: int) -> bool:
 
     return True
 
-def executar_testes() -> None:
-    """Executa casos de teste predefinidos para validar a função eh_primo."""
-    casos_de_teste = [0, 1, 2, 3, 4, 17, 18, 97, 100, 101]
-
-    for numero in casos_de_teste:
-        status = "primo" if eh_primo(numero) else "não primo"
-        print(f"{numero:>4} -> {status}")
+def interagir_com_usuario() -> None:
+    """Solicita um número ao usuário via terminal e verifica se é primo."""
+    print("=== Verificador de Números Primos ===")
+    while True:
+        entrada = input("Digite um número inteiro (ou 'q' para sair): ")
+        
+        if entrada.lower() == 'q':
+            print("Encerrando o programa...")
+            break
+            
+        try:
+            numero = int(entrada)
+            status = "É PRIMO" if eh_primo(numero) else "NÃO É PRIMO"
+            print(f"Resultado: O número {numero} {status}!\n")
+        except ValueError:
+            print("Erro: Entrada inválida. Por favor, digite apenas números inteiros.\n")
 
 if __name__ == "__main__":
-    executar_testes()
+    interagir_com_usuario()
