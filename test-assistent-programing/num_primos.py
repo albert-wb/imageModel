@@ -30,7 +30,24 @@ def eh_primo(numero: int) -> bool:
     return True
 
 def interagir_com_usuario() -> None:
-    """Solicita um número ao usuário via terminal e verifica se é primo."""
+    """
+    Solicita um número ao usuário via terminal e verifica se é primo.
+
+    A função executa um loop contínuo, lendo a entrada do usuário a partir
+    da linha de comando. Tenta converter a entrada para um número inteiro e 
+    utiliza a função `eh_primo` para verificar sua primalidade, imprimindo o
+    resultado. O loop é encerrado caso o usuário digite 'q'.
+
+    Args:
+        Não há argumentos.
+
+    Returns:
+        None: A função não retorna nenhum valor.
+
+    Raises:
+        ValueError: Tratado internamente caso a entrada do usuário não seja
+            um número inteiro válido.
+    """
     print("=== Verificador de Números Primos ===")
     while True:
         entrada = input("Digite um número inteiro (ou 'q' para sair): ")
